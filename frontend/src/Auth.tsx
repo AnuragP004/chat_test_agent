@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           Logout
         </button>
       </header>
-      <main className="flex-1 flex overflow-hidden bg-yellow-100">
+      <main className="flex-1 flex overflow-hidden">
         {children}
       </main>
     </div>

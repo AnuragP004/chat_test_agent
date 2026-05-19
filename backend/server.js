@@ -1,8 +1,14 @@
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const jwt = require('jsonwebtoken');
+const Groq = require('groq-sdk');
 const db = require('./db');
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 const app = express();
 app.use(cors());
@@ -546,6 +552,34 @@ app.post('/api/jobs/:jobId/estimate/reject', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Error rejecting estimate' });
+  }
+});
+
+// ==========================================
+// Chat Endpoints
+// ==========================================
+
+app.post('/api/chat', async (req, res) => {
+  const { messages } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(422).json({ error: 'VALIDATION_ERROR', message: 'Messages array is required' });
+  }
+
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: messages.map(m => ({
+        role: m.isMe ? 'user' : 'assistant',
+        content: m.text,
+      })),
+      model: 'llama3-8b-8192',
+    });
+
+    const aiResponse = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response.";
+    res.json({ text: aiResponse });
+  } catch (error) {
+    console.error('Groq Error:', error);
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to communicate with AI' });
   }
 });
 

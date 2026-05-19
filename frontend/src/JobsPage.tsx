@@ -3,8 +3,9 @@ import clsx from 'clsx';
 import JobsTab from './JobsTab';
 import TasksTab from './TasksTab';
 import EstimatesTab from './EstimatesTab';
+import ChatTab from './ChatTab';
 
-type Tab = 'jobs' | 'tasks' | 'estimates';
+type Tab = 'jobs' | 'tasks' | 'estimates' | 'chat';
 
 export default function JobsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('jobs');
@@ -14,11 +15,11 @@ export default function JobsPage() {
     { id: 'jobs', label: 'Jobs' },
     { id: 'tasks', label: 'Tasks' },
     { id: 'estimates', label: 'Estimates' },
+    { id: 'chat', label: 'Chat' },
   ];
 
   return (
     <div className="flex flex-col w-full flex-1 bg-slate-100">
-      <div className="bg-red-500 text-white p-2 text-center font-bold">FRONTEND RENDERING TEST</div>
       <div className="bg-white border-b border-slate-200 px-6 pt-4 flex gap-6">
         {tabs.map(tab => (
           <button
@@ -49,6 +50,7 @@ export default function JobsPage() {
         )}
         {activeTab === 'tasks' && <TasksTab selectedJobId={selectedJobId} />}
         {activeTab === 'estimates' && <EstimatesTab selectedJobId={selectedJobId} />}
+        {activeTab === 'chat' && <ChatTab />}
       </div>
     </div>
   );
