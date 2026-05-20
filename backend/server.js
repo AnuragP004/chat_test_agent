@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const jwt = require('jsonwebtoken');
 const Groq = require('groq-sdk');
 const db = require('./db');
+const path = require('path');
 
 const groq = process.env.GROQ_API_KEY ? new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -589,6 +590,15 @@ app.post('/api/chat', async (req, res) => {
     console.error('Python Agent Error:', error.message);
     res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to communicate with Python AI agent' });
   }
+});
+
+// ==========================================
+// Static Frontend Serving
+// ==========================================
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 // ==========================================

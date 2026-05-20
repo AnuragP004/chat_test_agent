@@ -1,12 +1,14 @@
 import httpx
 import asyncio
+import os
 from fastmcp import FastMCP
 from typing import Optional, List, Dict, Any
 
 # Create an MCP server
 mcp = FastMCP("Jobs & Tasks Management")
 
-API_BASE_URL = "http://localhost:3000/api"
+PORT = os.getenv("PORT", "3000")
+API_BASE_URL = f"http://localhost:{PORT}/api"
 TEST_USER_EMAIL = "test@example.com"
 _token: Optional[str] = None
 
