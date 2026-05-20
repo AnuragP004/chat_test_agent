@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import api from './api';
 
@@ -11,11 +12,42 @@ interface Message {
 }
 
 export default function ChatTab() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', sender: 'AI Assistant', text: 'Hello! How can I help you with your jobs and tasks today?', timestamp: new Date(), isMe: false },
-  ]);
+  const queryClient = useQueryClient();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch chat history on mount
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await api.get('/chat/history');
+        const history = res.data.messages.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }));
+        
+        if (history.length > 0) {
+          setMessages(history);
+        } else {
+          // Default greeting if no history
+          setMessages([
+            { id: '1', sender: 'AI Assistant', text: 'Hello! How can I help you with your jobs and tasks today?', timestamp: new Date(), isMe: false },
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch chat history:', error);
+        setMessages([
+          { id: '1', sender: 'AI Assistant', text: 'Hello! How can I help you with your jobs and tasks today?', timestamp: new Date(), isMe: false },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +78,9 @@ export default function ChatTab() {
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+      // Invalidate queries to refresh UI in other tabs
+      queryClient.invalidateQueries();
     } catch (error) {
       console.error('Chat Error:', error);
       const errorMessage: Message = {
@@ -68,7 +103,11 @@ export default function ChatTab() {
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-4 bg-slate-50">
-        {messages.map((msg) => (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">
+            Loading conversation history...
+          </div>
+        ) : messages.map((msg) => (
           <div
             key={msg.id}
             className={clsx(

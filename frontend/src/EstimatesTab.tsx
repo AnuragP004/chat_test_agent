@@ -47,19 +47,6 @@ export default function EstimatesTab({ selectedJobId }: { selectedJobId: string 
     }
   });
 
-  // Local state for live recalculation
-  const [markupPct, setMarkupPct] = useState(0);
-  const [taxRatePct, setTaxRatePct] = useState(10);
-  const [discountPct, setDiscountPct] = useState(0);
-
-  useEffect(() => {
-    if (estimate) {
-      setMarkupPct(parseFloat(estimate.markup_pct) || 0);
-      setTaxRatePct(parseFloat(estimate.tax_rate_pct) || 0);
-      setDiscountPct(parseFloat(estimate.discount_pct) || 0);
-    }
-  }, [estimate]);
-
   if (!selectedJobId) {
     return (
       <div className="w-full h-full flex items-center justify-center text-slate-500 bg-white border border-slate-200 border-dashed rounded">
@@ -72,26 +59,18 @@ export default function EstimatesTab({ selectedJobId }: { selectedJobId: string 
 
   const isLocked = estimate.status === 'approved';
 
-  // Live calculation
-  const subtotal = estimate.line_items.reduce((acc: number, item: any) => acc + (item.qty * item.unit_rate), 0);
-  const markupAmount = subtotal * (markupPct / 100);
-  const afterMarkup = subtotal + markupAmount;
-  const discountAmount = afterMarkup * (discountPct / 100);
-  const afterDiscount = afterMarkup - discountAmount;
-  
-  let taxableAmount = 0;
-  estimate.line_items.forEach((item: any) => {
-    if (item.taxable) {
-      const lineSub = item.qty * item.unit_rate;
-      const lineMarkup = lineSub * (markupPct / 100);
-      const lineAfterMarkup = lineSub + lineMarkup;
-      const lineDiscount = lineAfterMarkup * (discountPct / 100);
-      taxableAmount += (lineAfterMarkup - lineDiscount);
-    }
-  });
-
-  const taxAmount = taxableAmount * (taxRatePct / 100);
-  const total = afterDiscount + taxAmount;
+  // Use backend computed totals, falling back to local calculation if needed for "live" feel
+  // However, for consistency, we should trust the backend which handles the complex logic.
+  const {
+    subtotal = 0,
+    markup_amount: markupAmount = 0,
+    discount_amount: discountAmount = 0,
+    tax_amount: taxAmount = 0,
+    total = 0,
+    markup_pct: backendMarkup = 0,
+    tax_rate_pct: backendTaxRate = 10,
+    discount_pct: backendDiscount = 0
+  } = estimate;
 
   const handleBlur = (field: string, value: number) => {
     if (isLocked) return;
@@ -184,8 +163,7 @@ export default function EstimatesTab({ selectedJobId }: { selectedJobId: string 
                   type="number" 
                   min="0"
                   disabled={isLocked}
-                  value={markupPct} 
-                  onChange={e => setMarkupPct(parseFloat(e.target.value) || 0)}
+                  defaultValue={backendMarkup} 
                   onBlur={e => handleBlur('markup_pct', parseFloat(e.target.value) || 0)}
                   className="w-16 border rounded px-2 py-1 text-right font-mono disabled:bg-slate-50" 
                 />
@@ -200,8 +178,7 @@ export default function EstimatesTab({ selectedJobId }: { selectedJobId: string 
                   type="number" 
                   min="0"
                   disabled={isLocked}
-                  value={discountPct} 
-                  onChange={e => setDiscountPct(parseFloat(e.target.value) || 0)}
+                  defaultValue={backendDiscount} 
                   onBlur={e => handleBlur('discount_pct', parseFloat(e.target.value) || 0)}
                   className="w-16 border rounded px-2 py-1 text-right font-mono disabled:bg-slate-50" 
                 />
@@ -216,8 +193,7 @@ export default function EstimatesTab({ selectedJobId }: { selectedJobId: string 
                   type="number" 
                   min="0"
                   disabled={isLocked}
-                  value={taxRatePct} 
-                  onChange={e => setTaxRatePct(parseFloat(e.target.value) || 0)}
+                  defaultValue={backendTaxRate} 
                   onBlur={e => handleBlur('tax_rate_pct', parseFloat(e.target.value) || 0)}
                   className="w-16 border rounded px-2 py-1 text-right font-mono disabled:bg-slate-50" 
                 />

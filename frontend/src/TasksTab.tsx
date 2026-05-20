@@ -13,6 +13,7 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
   const [type, setType] = useState('labour');
   const [qty, setQty] = useState('');
   const [unitRate, setUnitRate] = useState('');
+  const [taxable, setTaxable] = useState(true);
 
   const { data: jobInfo } = useQuery({
     queryKey: ['job', selectedJobId],
@@ -44,6 +45,7 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
       setName('');
       setQty('');
       setUnitRate('');
+      setTaxable(true);
     }
   });
 
@@ -83,6 +85,7 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
       type,
       qty: parseFloat(qty),
       unit_rate: parseFloat(unitRate),
+      taxable,
     });
   };
 
@@ -103,7 +106,7 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
 
       {isAdding && (
         <form onSubmit={handleAdd} className="p-4 border-b border-slate-200 bg-slate-50 grid grid-cols-12 gap-4 items-end">
-          <div className="col-span-4">
+          <div className="col-span-3">
             <label className="block text-xs font-semibold text-slate-600 mb-1">Name</label>
             <input required value={name} onChange={e => setName(e.target.value)} className="w-full border p-2 rounded text-sm" placeholder="Task description" />
           </div>
@@ -115,12 +118,18 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
             </select>
           </div>
           <div className="col-span-2">
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Qty (Hrs/Items)</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Qty</label>
             <input required type="number" step="0.01" value={qty} onChange={e => setQty(e.target.value)} className="w-full border p-2 rounded text-sm font-mono" />
           </div>
           <div className="col-span-2">
             <label className="block text-xs font-semibold text-slate-600 mb-1">Rate ($)</label>
             <input required type="number" step="0.01" value={unitRate} onChange={e => setUnitRate(e.target.value)} className="w-full border p-2 rounded text-sm font-mono" />
+          </div>
+          <div className="col-span-1 flex items-center mb-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={taxable} onChange={e => setTaxable(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500" />
+              <span className="text-xs font-semibold text-slate-600">Tax</span>
+            </label>
           </div>
           <div className="col-span-2">
             <button type="submit" disabled={addMutation.isPending} className="w-full bg-blue-600 text-white py-2 rounded font-semibold text-sm hover:bg-blue-700">
@@ -137,10 +146,11 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
           <thead className="text-xs text-slate-500 bg-slate-50 uppercase sticky top-0 border-b border-slate-200 shadow-sm">
             <tr>
               <th className="px-4 py-3">Task Name</th>
-              <th className="px-4 py-3 w-24">Type</th>
-              <th className="px-4 py-3 w-24 text-right">Qty</th>
-              <th className="px-4 py-3 w-24 text-right">Rate</th>
-              <th className="px-4 py-3 w-32 text-right">Subtotal</th>
+              <th className="px-4 py-3 w-20">Type</th>
+              <th className="px-4 py-3 w-16 text-right">Qty</th>
+              <th className="px-4 py-3 w-20 text-right">Rate</th>
+              <th className="px-4 py-3 w-16 text-center">Tax</th>
+              <th className="px-4 py-3 w-24 text-right">Subtotal</th>
               <th className="px-4 py-3 w-16 text-center">Act. Hrs</th>
               <th className="px-4 py-3 w-16"></th>
             </tr>
@@ -160,11 +170,12 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
                     step="0.01" 
                     defaultValue={parseFloat(task.qty)}
                     onBlur={(e) => {
-                      if (e.target.value !== parseFloat(task.qty).toString()) {
-                        updateMutation.mutate({ taskId: task.task_id, updates: { qty: parseFloat(e.target.value) } });
+                      const val = parseFloat(e.target.value);
+                      if (val !== parseFloat(task.qty)) {
+                        updateMutation.mutate({ taskId: task.task_id, updates: { qty: val } });
                       }
                     }}
-                    className="w-16 text-right border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none bg-transparent font-mono" 
+                    className="w-full text-right border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none bg-transparent font-mono" 
                   />
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -173,11 +184,22 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
                     step="0.01" 
                     defaultValue={parseFloat(task.unit_rate)}
                     onBlur={(e) => {
-                      if (e.target.value !== parseFloat(task.unit_rate).toString()) {
-                        updateMutation.mutate({ taskId: task.task_id, updates: { unit_rate: parseFloat(e.target.value) } });
+                      const val = parseFloat(e.target.value);
+                      if (val !== parseFloat(task.unit_rate)) {
+                        updateMutation.mutate({ taskId: task.task_id, updates: { unit_rate: val } });
                       }
                     }}
-                    className="w-16 text-right border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none bg-transparent font-mono" 
+                    className="w-full text-right border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none bg-transparent font-mono" 
+                  />
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={task.taxable} 
+                    onChange={(e) => {
+                      updateMutation.mutate({ taskId: task.task_id, updates: { taxable: e.target.checked } });
+                    }}
+                    className="rounded text-blue-600 focus:ring-blue-500"
                   />
                 </td>
                 <td className="px-4 py-3 text-right font-mono font-bold text-slate-700">
@@ -189,8 +211,9 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
                     step="0.1" 
                     defaultValue={parseFloat(task.actual_hrs) || 0}
                     onBlur={(e) => {
-                      if (e.target.value !== parseFloat(task.actual_hrs || 0).toString()) {
-                        updateMutation.mutate({ taskId: task.task_id, updates: { actual_hrs: parseFloat(e.target.value) } });
+                      const val = parseFloat(e.target.value);
+                      if (val !== parseFloat(task.actual_hrs || 0)) {
+                        updateMutation.mutate({ taskId: task.task_id, updates: { actual_hrs: val } });
                       }
                     }}
                     className="w-12 text-center border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none bg-transparent font-mono text-slate-500" 
@@ -208,7 +231,7 @@ export default function TasksTab({ selectedJobId }: { selectedJobId: string | nu
             ))}
             {data?.tasks.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-slate-500">No tasks added yet.</td>
+                <td colSpan={8} className="px-4 py-8 text-center text-slate-500">No tasks added yet.</td>
               </tr>
             )}
           </tbody>
